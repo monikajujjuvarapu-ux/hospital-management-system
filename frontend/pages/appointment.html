@@ -1,0 +1,148 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Appointments</title>
+    <link rel="stylesheet" href="../css/style.css">
+</head>
+
+<body>
+
+<div class="patient-page">
+
+    <!-- LEFT SIDE: VIEW APPOINTMENTS -->
+    <div class="right-section">
+
+        <h1>Appointments</h1>
+
+        <table id="apptTable">
+
+            <thead>
+                <tr>
+                    <th>ID</th>
+                    <th>Patient ID</th>
+                    <th>Doctor ID</th>
+                    <th>Date</th>
+                    <th>Time</th>
+                    <th>Status</th>
+                    <th>Action</th>
+                </tr>
+            </thead>
+
+            <tbody></tbody>
+
+        </table>
+
+    </div>
+
+    <!-- RIGHT SIDE: ADD APPOINTMENT -->
+    <div class="left-section">
+
+        <form id="appointmentForm">
+
+            <h1>Book Appointment</h1>
+
+            <input type="hidden" id="appointmentId">
+
+            <input type="number" id="patientId" placeholder="Patient ID" required>
+
+            <input type="number" id="doctorId" placeholder="Doctor ID" required>
+
+            <input type="date" id="appointmentDate" required>
+
+            <input type="time" id="appointmentTime" required>
+            
+            <button type="submit">Save Appointment</button>
+
+        </form>
+
+    </div>
+
+</div>
+
+<script>
+
+const api = "http://localhost:5000/api/Appointment";
+const form = document.getElementById("appointmentForm");
+
+// LOAD APPOINTMENTS
+async function loadAppointments()
+{
+    const res = await fetch(`${api}/all`);
+    const data = await res.json();
+
+    let rows = "";
+
+    data.forEach(a => {
+        const formattedDate = a.appointmentDate ? a.appointmentDate.substring(0, 10) : "";
+        rows += `
+        <tr>
+            <td>${a.appointmentId}</td>
+            <td>${a.patientId}</td>
+            <td>${a.doctorId}</td>
+            <td>${formattedDate}</td>
+            <td>${a.appointmentTime}</td>
+            <td>${a.status}</td>
+            <td>
+                <button onclick="cancelAppointment(${a.appointmentId})">
+                    Cancel
+                </button>
+            </td>
+        </tr>`;
+    });
+
+    document.querySelector("#apptTable tbody").innerHTML = rows;
+}
+
+loadAppointments();
+
+// ADD APPOINTMENT
+form.addEventListener("submit", async function(e)
+{
+    e.preventDefault();
+
+    const appointment = {
+        patientId: parseInt(document.getElementById("patientId").value),
+        doctorId: parseInt(document.getElementById("doctorId").value),
+        appointmentDate: document.getElementById("appointmentDate").value,
+        appointmentTime: document.getElementById("appointmentTime").value
+    };
+
+    const res = await fetch(`${api}/add`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(appointment)
+    });
+
+    if(res.ok)
+    {
+        alert("Appointment Booked");
+        form.reset();
+        loadAppointments();
+    }
+    else
+    {
+        alert("Failed");
+    }
+});
+
+// CANCEL APPOINTMENT
+async function cancelAppointment(id)
+{
+    const res = await fetch(`${api}/cancel/${id}`, {
+        method: "PUT"
+    });
+
+    if(res.ok)
+    {
+        alert("Cancelled");
+        loadAppointments();
+    }
+}
+
+</script>
+
+</body>
+</html>

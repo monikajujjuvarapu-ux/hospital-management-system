@@ -1,0 +1,166 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Medical Records</title>
+    <link rel="stylesheet" href="../css/style.css">
+</head>
+
+<body>
+
+<div class="patient-page">
+
+    <!-- LEFT SIDE: VIEW RECORDS -->
+    <div class="right-section">
+
+        <h1>Medical Records</h1>
+
+        <table id="recordTable">
+
+            <thead>
+                <tr>
+                    <th>ID</th>
+                    <th>Patient ID</th>
+                    <th>Diagnosis</th>
+                    <th>Description</th>
+                    <th>Prescription</th>
+                    <th>Date</th>
+                    <th>Action</th>
+                </tr>
+            </thead>
+
+            <tbody></tbody>
+
+        </table>
+
+    </div>
+
+    <!-- RIGHT SIDE: ADD / UPDATE RECORD -->
+    <div class="left-section">
+
+        <form id="recordForm">
+
+            <h1>Add Medical Record</h1>
+
+            <input type="hidden" id="recordId">
+
+            <input type="number" id="patientId" placeholder="Patient ID" required>
+
+            <input type="text" id="diagnosis" placeholder="Diagnosis" required>
+
+            <input type="text" id="description" placeholder="Description" required>
+
+            <input type="text" id="prescription" placeholder="Prescription" required>
+
+            <input type="date" id="visitDate" required>
+
+            <button type="submit">Save Record</button>
+
+        </form>
+
+    </div>
+
+</div>
+
+<script>
+
+const api = "http://localhost:5000/api/MedicalRecord";
+const form = document.getElementById("recordForm");
+
+// LOAD RECORDS
+async function loadRecords()
+{
+    const res = await fetch(`${api}/all`);
+    const data = await res.json();
+
+    let rows = "";
+
+    data.forEach(r => {
+        const formattedDate = r.visitDate ? r.visitDate.substring(0, 10) : "";
+        rows += `
+        <tr>
+            <td>${r.recordId}</td>
+            <td>${r.patientId}</td>
+            <td>${r.diagnosis}</td>
+            <td>${r.description || ""}</td>
+            <td>${r.prescription || ""}</td>
+            <td>${formattedDate}</td>
+            <td>
+                <button onclick="editRecord(
+                    ${r.recordId},
+                    ${r.patientId},
+                    '${r.diagnosis ? r.diagnosis.replace(/'/g, "\\'") : ""}',
+                    '${r.description ? r.description.replace(/'/g, "\\'") : ""}',
+                    '${r.prescription ? r.prescription.replace(/'/g, "\\'") : ""}',
+                    '${formattedDate}'
+                )">Edit</button>
+            </td>
+        </tr>`;
+    });
+
+    document.querySelector("#recordTable tbody").innerHTML = rows;
+}
+
+loadRecords();
+
+// ADD / UPDATE RECORD
+form.addEventListener("submit", async function(e)
+{
+    e.preventDefault();
+
+    const id = document.getElementById("recordId").value;
+
+    const record = {
+        recordId: id ? parseInt(id) : 0,
+        patientId: parseInt(document.getElementById("patientId").value),
+        diagnosis: document.getElementById("diagnosis").value,
+        description: document.getElementById("description").value,
+        prescription: document.getElementById("prescription").value,
+        visitDate: document.getElementById("visitDate").value
+    };
+
+    let url = `${api}/add`;
+    let method = "POST";
+
+    if(id)
+    {
+        url = `${api}/update/${id}`;
+        method = "PUT";
+    }
+
+    const res = await fetch(url, {
+        method: method,
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(record)
+    });
+
+    if(res.ok)
+    {
+        alert("Success");
+        form.reset();
+        document.getElementById("recordId").value = "";
+        loadRecords();
+    }
+    else
+    {
+        alert("Failed");
+    }
+});
+
+// EDIT RECORD
+function editRecord(id, patientId, diagnosis, description, prescription, visitDate)
+{
+    document.getElementById("recordId").value = id;
+    document.getElementById("patientId").value = patientId;
+    document.getElementById("diagnosis").value = diagnosis;
+    document.getElementById("description").value = description;
+    document.getElementById("prescription").value = prescription;
+    document.getElementById("visitDate").value = visitDate;
+}
+
+</script>
+
+</body>
+</html>
